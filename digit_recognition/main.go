@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/png"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -107,12 +108,14 @@ func LoadImagesToRecognize(path string, imgW, imgH int) ([]Digit, error) {
 
 //digit images from http://cis.jhu.edu/~sachin/digit/digit.html
 func main() {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	imageSize := 28
 	timeStarted := time.Now()
 	readAllImages(imageSize, imageSize)
 	imagesLoadFinish := time.Since(timeStarted)
-	// randomKnownImage := Digits[rand.Intn(len(Digits))]
+	randomKnownImage := Digits[rand.Intn(len(Digits))]
 	loaded, err := LoadImagesToRecognize("./to_recognize", imageSize, imageSize)
+	loaded = append(loaded, randomKnownImage)
 	if err != nil {
 		fmt.Print(err)
 		return
@@ -126,7 +129,4 @@ func main() {
 	}
 	totaltime := time.Since(timeStarted)
 	fmt.Printf("Loaded %d images in %s totaltime %s\n", len(Digits), imagesLoadFinish, totaltime)
-	// result, bestResult := randomKnownImage.compare(Digits)
-	// fmt.Printf("%+v expected %d bestResult %f\n", result, randomKnownImage.digit, bestResult)
-	// randomKnownImage.writeToFile()
 }
