@@ -22,7 +22,7 @@ type City struct {
 }
 
 func (c *City) distanceTo(d City) float64 {
-	return math.Sqrt(math.Pow(c.x-d.x, 2) * math.Pow(c.y-d.y, 2))
+	return math.Sqrt(math.Pow(c.x-d.x, 2) + math.Pow(c.y-d.y, 2))
 }
 func (c *City) Rect() image.Rectangle {
 	return image.Rect(int(c.x), int(c.y), int(c.x+5), int(c.y+5))
@@ -37,6 +37,21 @@ type Route struct {
 	fitness  float64
 }
 
+var MutationRate = 0.05
+
+func swap(a, b City) (City, City) {
+	return b, a
+}
+func (r *Route) mutate() {
+	mutable := r.mutable()
+	for i := 0; i < len(mutable); i++ {
+		if rand1.Float64() < MutationRate {
+			index := rand1.Intn(len(mutable))
+			mutable[i], mutable[index] = swap(mutable[i], mutable[index])
+			r.setmutable(mutable)
+		}
+	}
+}
 func (r *Route) setOrginCity(start City) {
 	r.route = append([]City{start}, r.route...)
 }
@@ -45,8 +60,8 @@ func (r *Route) setDestinationCity(end City) {
 }
 func (r *Route) calculateDistance() float64 {
 	distance := .0
-	for i := 1; i < len(r.route); i++ {
-		d := r.route[i-1].distanceTo(r.route[i])
+	for i := 0; i < len(r.route)-1; i++ {
+		d := r.route[i].distanceTo(r.route[i+1])
 		distance += d
 	}
 	r.distance = distance
@@ -225,21 +240,45 @@ func naturalSelection(population populationT, desiredPopulationsize int, maxFitn
 	for i := 0; i < desiredPopulationsize; i++ {
 		mom, dad := population[rand.Intn(len(population))], population[rand.Intn(len(population))]
 		child := makeChild(mom, dad)
+		child.mutate()
 		nextGeneration[i] = child
 	}
 	nextGeneration.CalcFitness()
 	return nextGeneration
 }
 func main() {
+	myRoute := Route{
+		route: []City{
+			City{name: "Katowice", x: 110, y: 300},
+			City{name: "Karków", x: 150, y: 290},
+			City{name: "Rzeszów", x: 210, y: 290},
+			City{name: "Lublin", x: 220, y: 190},
+			City{name: "Warszawa", x: 170, y: 120},
+			City{name: "Łodź", x: 150, y: 140},
+			City{name: "Gdynia", x: 100, y: 5},
+			City{name: "Szczecin", x: 5, y: 30},
+			City{name: "Bydgoszcz", x: 90, y: 70},
+			City{name: "Wrocław", x: 60, y: 200},
+			City{name: "Katowice", x: 110, y: 310},
+		},
+	}
+	myRoute.calculateDistance()
+	myRoute.routeToIMG("./results/3/", -1)
+
 	orgin := City{name: "Katowice", x: 110, y: 300}
 	destination := City{name: "Katowice", x: 110, y: 310}
 	population := CreatePopulation(orgin, destination, 500)
 	population.CalcFitness()
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 1000; i++ {
 		best := getBest(population)
 		pool := rouletteWheelSelection(population, best.fitness)
 		population = naturalSelection(pool, len(population), best.fitness)
-		fmt.Printf("generation: %d distance:%f fitness: %f\n", i, best.distance, best.fitness)
-		best.routeToIMG("output/3/", i)
+		fmt.Printf("generation: %d distance: %f fitness: %f\n", i, best.distance, best.fitness)
+		if best.distance < 900 {
+			best.routeToIMG("results/3/", i)
+		}
 	}
+	fmt.Printf("moja: distance:%f fitness: %f\n", myRoute.distance, myRoute.fitness)
+	fmt.Printf("moja: %v \n", myRoute.route)
+	fmt.Printf("best: %v", myRoute.route)
 }
